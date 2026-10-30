@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paws & Plates - Pet Feeding Schedule & Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fdf8f6',
+                            100: '#fbe8e6',
+                            500: '#ff6b4a',
+                            600: '#e85532',
+                            700: '#c24122',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ================= AUTH & ACCOUNT SCREENS ================= -->
+    <div id="auth-wrapper" class="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
+        <!-- Screen 1: Choose or Add Account -->
+        <div id="auth-screen-chooser" class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-8 border border-slate-200">
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-2xl mx-auto shadow-lg shadow-brand-500/20 mb-3">
+                    <i class="fa-solid fa-paw"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">Paws & Plates</h1>
+                <p class="text-sm text-slate-500 mt-1">Sign in to your household or create a new account</p>
+            </div>
+
+            <div id="auth-accounts-list" class="space-y-3 mb-6 max-h-60 overflow-y-auto">
+                <!-- Populated by JS -->
+            </div>
+
+            <button type="button" onclick="showAuthCreateScreen()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i> Add another account
+            </button>
+        </div>
+
+        <!-- Screen 2: Sign In with Password -->
+        <div id="auth-screen-signin" class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-8 border border-slate-200 hidden">
+            <button type="button" onclick="showAuthChooser()" class="text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1 mb-6">
+                <i class="fa-solid fa-arrow-left"></i> Back to accounts
+            </button>
+            <div class="text-center mb-6">
+                <div id="signin-avatar" class="w-14 h-14 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold mx-auto mb-3">U</div>
+                <h2 id="signin-name" class="text-xl font-bold text-slate-900">User Name</h2>
+                <p id="signin-email" class="text-xs text-slate-500 mt-0.5">user@example.com</p>
+            </div>
+            <form onsubmit="handleSignInSubmit(event)" class="space-y-4">
+                <input type="hidden" id="signin-email-input">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Password</label>
+                    <input type="password" id="signin-password" required placeholder="Enter your password" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all">Sign In</button>
+            </form>
+        </div>
+
+        <!-- Screen 3: Create Account -->
+        <div id="auth-screen-create" class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-8 border border-slate-200 hidden">
+            <button type="button" onclick="showAuthChooser()" class="text-sm text-slate-500 hover:text-slate-800 flex items-center gap-1 mb-6">
+                <i class="fa-solid fa-arrow-left"></i> Back to accounts
+            </button>
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Create Account</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Set up a new pet care household</p>
+            </div>
+            <form onsubmit="handleCreateAccountSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Your Name</label>
+                    <input type="text" id="create-name" required placeholder="e.g. Sarah Jenkins" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Email Address</label>
+                    <input type="email" id="create-email" required placeholder="e.g. sarah@example.com" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Password</label>
+                    <input type="password" id="create-password" required placeholder="Create a password" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-3 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all mt-2">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                    <i class="fa-solid fa-paw text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 leading-tight">Paws & Plates</h1>
+                    <p class="text-xs text-slate-500">Smart Pet Feeding & Care</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-brand-50 text-brand-700">
+                    <i class="fa-solid fa-chart-pie mr-2"></i> Dashboard
+                </button>
+                <button onclick="switchTab('schedule')" id="nav-schedule" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-clock mr-2"></i> Today's Schedule
+                </button>
+                <button onclick="switchTab('pets')" id="nav-pets" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-dog mr-2"></i> Pet Profiles
+                </button>
+                <button onclick="switchTab('pantry')" id="nav-pantry" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-boxes-stacked mr-2"></i> Pet Pantry
+                </button>
+                <button onclick="switchTab('analytics')" id="nav-analytics" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-chart-line mr-2"></i> Analytics
+                </button>
+                <button onclick="switchTab('history')" id="nav-history" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-book-medical mr-2"></i> Meal History
+                </button>
+            </nav>
+
+            <!-- Quick Add Action & Account Switcher Dropdown -->
+            <div class="flex items-center space-x-3">
+                <button onclick="openMealModal()" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">Log Meal</span>
+                </button>
+
+                <!-- Gmail-style Account Switcher Dropdown -->
+                <div class="relative">
+                    <button onclick="toggleAccountDropdown()" id="account-menu-btn" class="flex items-center gap-2 p-1.5 rounded-full hover:bg-slate-100 border border-slate-200 transition-colors">
+                        <div id="header-user-avatar" class="w-8 h-8 rounded-full bg-brand-500 text-white font-bold flex items-center justify-center text-xs">U</div>
+                    </button>
+                    <div id="account-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-3 z-50">
+                        <div class="px-4 pb-3 border-b border-slate-100 text-center">
+                            <p id="dropdown-user-name" class="font-bold text-slate-900 text-sm">User Name</p>
+                            <p id="dropdown-user-email" class="text-xs text-slate-500">user@example.com</p>
+                        </div>
+                        <div class="px-2 py-2 space-y-1">
+                            <button onclick="openAuthFromDashboard()" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                                <i class="fa-solid fa-users w-4"></i> Switch or Add Account
+                            </button>
+                            <button onclick="handleSignOut()" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                <i class="fa-solid fa-right-from-bracket w-4"></i> Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
+            <button onclick="switchTab('dashboard'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+            </button>
+            <button onclick="switchTab('schedule'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-clock w-5"></i> Today's Schedule
+            </button>
+            <button onclick="switchTab('pets'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-dog w-5"></i> Pet Profiles
+            </button>
+            <button onclick="switchTab('pantry'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-boxes-stacked w-5"></i> Pet Pantry
+            </button>
+            <button onclick="switchTab('analytics'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line w-5"></i> Analytics
+            </button>
+            <button onclick="switchTab('history'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-book-medical w-5"></i> Meal History
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <div id="tab-dashboard" class="space-y-6">
+            <!-- Welcome Banner -->
+            <div class="bg-gradient-to-r from-brand-500 to-amber-500 rounded-2xl p-6 sm:p-8 text-white shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <div>
+                    <span class="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Today's Overview</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold mt-2" id="dashboard-date-str">Loading Date...</h2>
+                    <p class="text-white/90 text-sm mt-1">Keep your pets healthy and happy with timely, balanced nutrition.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 flex items-center gap-4 border border-white/20 w-full sm:w-auto">
+                    <div class="text-3xl font-bold" id="dash-progress-count">0/0</div>
+                    <div class="text-xs uppercase tracking-wider text-white/80 font-medium">Meals Fed<br>Today</div>
+                    <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-xl ml-2">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-orange-50 text-brand-500 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-dog"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Active Pets</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="stat-pet-count">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Meals Completed</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="stat-completed-count">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Upcoming Meals</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="stat-upcoming-count">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-bowl-food"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Dietary Plans</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="stat-diet-count">Active</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Upcoming Meals Queue -->
+                <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-brand-500"></i> Upcoming Meals Today
+                        </h3>
+                        <button onclick="switchTab('schedule')" class="text-sm text-brand-600 font-semibold hover:underline">View Schedule</button>
+                    </div>
+                    <div id="dashboard-upcoming-list" class="space-y-3 flex-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Pet Quick Status Card -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-paw text-brand-500"></i> Pet Status
+                        </h3>
+                        <button onclick="switchTab('pets')" class="text-sm text-brand-600 font-semibold hover:underline">Manage</button>
+                    </div>
+                    <div id="dashboard-pets-status" class="space-y-4 flex-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: TODAY'S SCHEDULE ================= -->
+        <div id="tab-schedule" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Today's Feeding Schedule</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Automatically generated times based on your pets' daily routines.</p>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <button onclick="regenerateSchedules()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> Regenerate Schedule
+                    </button>
+                    <button onclick="openMealModal()" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Log Meal
+                    </button>
+                </div>
+            </div>
+
+            <!-- Schedule List by Pet or Time -->
+            <div id="schedule-container" class="space-y-6">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: PET PROFILES ================= -->
+        <div id="tab-pets" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Pet Profiles</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Manage your pets, animal species, dietary requirements, and meal frequency.</p>
+                </div>
+                <button onclick="openPetModal()" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Add New Pet
+                </button>
+            </div>
+
+            <!-- Pets Grid -->
+            <div id="pets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- ================= TAB: PET PANTRY ================= -->
+        <div id="tab-pantry" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Pet Pantry & Food Supplies</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Track remaining food stock, treats, and supplements so you never run out.</p>
+                </div>
+                <button onclick="openPantryModal()" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Add Supply Item
+                </button>
+            </div>
+
+            <!-- Pantry Grid -->
+            <div id="pantry-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- ================= TAB: ANALYTICS ================= -->
+        <div id="tab-analytics" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Feeding Analytics & Health Insights</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Overview of feeding adherence, streaks, and estimated nutritional requirements.</p>
+                </div>
+                <div>
+                    <select id="analytics-pet-select" onchange="renderAnalytics()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="all">All Pets Combined</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Analytics Top Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Adherence Rate</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="analytics-adherence">0%</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-orange-50 text-brand-500 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Feeding Streak</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="analytics-streak">0 Days</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Meals Logged</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="analytics-total-meals">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Est. Daily Calories</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="analytics-calories">0 kcal</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pet Specific Nutritional Breakdown -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 class="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-paw text-brand-500"></i> Pet Calorie & Nutrient Estimates
+                </h3>
+                <div id="analytics-pets-breakdown" class="space-y-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 4: MEAL HISTORY LOG ================= -->
+        <div id="tab-history" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Feeding History & Logs</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Review completed meals, timestamps, and feeding notes.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="history-filter-pet" onchange="renderHistory()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="all">All Pets</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- History Table / List -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-4">Pet</th>
+                                <th class="py-3 px-4">Meal Name</th>
+                                <th class="py-3 px-4">Scheduled Time</th>
+                                <th class="py-3 px-4">Fed At</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4">Notes</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-200 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= MODAL: CUSTOM CONFIRMATION ================= -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all p-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl mx-auto mb-3">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirm-title" class="font-bold text-lg text-slate-900 mb-1">Are you sure?</h3>
+            <p id="confirm-message" class="text-sm text-slate-500 mb-6">This action cannot be undone.</p>
+            <div class="flex items-center space-x-3">
+                <button type="button" onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="button" id="confirm-action-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm shadow-md shadow-red-600/20 transition-all">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: ADD/EDIT PET ================= -->
+    <div id="pet-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <h3 id="pet-modal-title" class="font-bold text-lg text-slate-900">Add New Pet</h3>
+                <button onclick="closePetModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="pet-form" onsubmit="handlePetSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="pet-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Pet Name *</label>
+                    <input type="text" id="pet-name" required placeholder="e.g. Buster" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Animal Species *</label>
+                        <select id="pet-species" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="Dog">Dog</option>
+                            <option value="Cat">Cat</option>
+                            <option value="Rabbit">Rabbit</option>
+                            <option value="Bird">Bird</option>
+                            <option value="Hamster">Hamster</option>
+                            <option value="Reptile">Reptile</option>
+                            <option value="Fish">Fish</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Age (Years)</label>
+                        <input type="number" step="0.1" id="pet-age" min="0" required placeholder="e.g. 3" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Weight (kg)</label>
+                        <input type="number" step="0.1" id="pet-weight" min="0.1" required placeholder="e.g. 12.5" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Daily Meals Required *</label>
+                        <select id="pet-meals-count" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="1">1 Meal / Day</option>
+                            <option value="2" selected>2 Meals / Day</option>
+                            <option value="3">3 Meals / Day</option>
+                            <option value="4">4 Meals / Day</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Diet Type & Brand</label>
+                    <input type="text" id="pet-diet" required placeholder="e.g. Grain-Free Kibble & Wet Food" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Portion Size per Meal</label>
+                    <input type="text" id="pet-portion" required placeholder="e.g. 1.5 cups (approx 150g)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
+                    <button type="button" onclick="closePetModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all">Save Pet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: ADD/EDIT PANTRY ITEM ================= -->
+    <div id="pantry-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <h3 id="pantry-modal-title" class="font-bold text-lg text-slate-900">Add Supply Item</h3>
+                <button onclick="closePantryModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="pantry-form" onsubmit="handlePantrySubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="pantry-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Item Name *</label>
+                    <input type="text" id="pantry-name" required placeholder="e.g. Salmon Kibble 10kg Bag" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Category *</label>
+                    <select id="pantry-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="Dry Food">Dry Food</option>
+                        <option value="Wet Food">Wet Food / Cans</option>
+                        <option value="Treats">Treats & Snacks</option>
+                        <option value="Supplements">Vitamins & Supplements</option>
+                        <option value="Other">Other Supply</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Remaining Stock *</label>
+                        <input type="number" step="0.1" id="pantry-quantity" min="0" required placeholder="e.g. 4.5" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Unit *</label>
+                        <select id="pantry-unit" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="kg">kg</option>
+                            <option value="lbs">lbs</option>
+                            <option value="cans">cans / pouches</option>
+                            <option value="bags">bags</option>
+                            <option value="units">units</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Low Stock Warning Threshold</label>
+                    <input type="number" step="0.1" id="pantry-threshold" min="0" required value="2.0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
+                    <button type="button" onclick="closePantryModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: LOG/RECORD COMPLETED MEAL ================= -->
+    <div id="meal-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-lg text-slate-900">Record Completed Meal</h3>
+                <button onclick="closeMealModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="meal-form" onsubmit="handleMealSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="meal-schedule-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Select Pet *</label>
+                    <select id="meal-pet-select" onchange="updatePetMealsDropdown()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Meal Name / Slot *</label>
+                    <select id="meal-name-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="Breakfast">Breakfast</option>
+                        <option value="Lunch">Lunch</option>
+                        <option value="Dinner">Dinner</option>
+                        <option value="Snack / Treat">Snack / Treat</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Fed Timestamp *</label>
+                    <input type="datetime-local" id="meal-timestamp" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Notes / Appetite / Medications</label>
+                    <textarea id="meal-notes" rows="3" placeholder="e.g. Ate with great appetite. Added joint supplement." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
+                    <button type="button" onclick="closeMealModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all">Record Meal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        // --- Date & Time Formatters ---
+        function formatTime12h(timeStr) {
+            if (!timeStr) return '';
+            const [hoursStr, minutesStr] = timeStr.split(':');
+            let hours = parseInt(hoursStr, 10);
+            const minutes = minutesStr || '00';
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${hours}:${minutes} ${ampm}`;
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            if (isNaN(d.getTime())) return isoString;
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString();
+        }
+
+        // --- Multi-Account & Auth State Management ---
+        function showAuthChooser() {
+            document.getElementById('auth-wrapper').classList.remove('hidden');
+            document.getElementById('auth-screen-chooser').classList.remove('hidden');
+            document.getElementById('auth-screen-signin').classList.add('hidden');
+            document.getElementById('auth-screen-create').classList.add('hidden');
+
+            const listEl = document.getElementById('auth-accounts-list');
+            if (!authState.accounts || authState.accounts.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No accounts found. Create one below.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = authState.accounts.map(acc => `
+                <div onclick="selectAccountToSignIn('${acc.email}')" class="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-slate-50 cursor-pointer transition-all">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 font-bold flex items-center justify-center text-sm">
+                            ${acc.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">${acc.name}</p>
+                            <p class="text-xs text-slate-500">${acc.email}</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                </div>
+            `).join('');
+        }
+
+        function showAuthCreateScreen() {
+            document.getElementById('auth-screen-chooser').classList.add('hidden');
+            document.getElementById('auth-screen-create').classList.remove('hidden');
+            document.getElementById('create-name').value = '';
+            document.getElementById('create-email').value = '';
+            document.getElementById('create-password').value = '';
+        }
+
+        function selectAccountToSignIn(email) {
+            const acc = authState.accounts.find(a => a.email === email);
+            if (!acc) return;
+
+            document.getElementById('auth-screen-chooser').classList.add('hidden');
+            document.getElementById('auth-screen-signin').classList.remove('hidden');
+            
+            document.getElementById('signin-name').innerText = acc.name;
+            document.getElementById('signin-email').innerText = acc.email;
+            document.getElementById('signin-email-input').value = acc.email;
+            document.getElementById('signin-avatar').innerText = acc.name.charAt(0).toUpperCase();
+            document.getElementById('signin-password').value = '';
+        }
+
+        function handleSignInSubmit(event) {
+            event.preventDefault();
+            const email = document.getElementById('signin-email-input').value;
+            const password = document.getElementById('signin-password').value;
+
+            const acc = authState.accounts.find(a => a.email === email);
+            if (acc && acc.password === password) {
+                authState.currentUserEmail = email;
+                state = acc.data;
+                saveData();
+                closeAuthModal();
+                initAppUI();
+                showToast(`Welcome back, ${acc.name}!`);
+            } else {
+                showToast("Incorrect password. Please try again.", "error");
+            }
+        }
+
+        function handleCreateAccountSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('create-name').value;
+            const email = document.getElementById('create-email').value;
+            const password = document.getElementById('create-password').value;
+
+            if (authState.accounts.some(a => a.email === email)) {
+                showToast("An account with this email already exists.", "error");
+                return;
+            }
+
+            const newAcc = {
+                name: name,
+                email: email,
+                password: password,
+                data: {
+                    pets: [
+                        {
+                            id: 'pet_1',
+                            name: 'Max',
+                            species: 'Dog',
+                            age: 2,
+                            weight: 10.0,
+                            diet: 'Puppy Formula Kibble',
+                            mealsCount: 3,
+                            portion: '1 cup'
+                        }
+                    ],
+                    pantry: [
+                        {
+                            id: 'pant_1',
+                            name: 'Puppy Formula Kibble',
+                            category: 'Dry Food',
+                            quantity: 5.0,
+                            unit: 'kg',
+                            threshold: 2.0
+                        }
+                    ],
+                    schedules: {},
+                    history: []
+                }
+            };
+
+            authState.accounts.push(newAcc);
+            authState.currentUserEmail = email;
+            state = newAcc.data;
+            saveData();
+            closeAuthModal();
+            initAppUI();
+            showToast(`Account created successfully! Welcome, ${name}.`);
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-wrapper').classList.add('hidden');
+        }
+
+        function openAuthFromDashboard() {
+            document.getElementById('account-dropdown').classList.add('hidden');
+            showAuthChooser();
+        }
+
+        function handleSignOut() {
+            authState.currentUserEmail = null;
+            saveData();
+            document.getElementById('account-dropdown').classList.add('hidden');
+            showAuthChooser();
+            showToast("Signed out successfully.");
+        }
+
+        function toggleAccountDropdown() {
+            const dropdown = document.getElementById('account-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        let authState = {
+            currentUserEmail: null,
+            accounts: [
+                {
+                    name: 'Sarah Jenkins',
+                    email: 'sarah@example.com',
+                    password: 'password123',
+                    data: {
+                        pets: [
+                            {
+                                id: 'pet_1',
+                                name: 'Luna',
+                                species: 'Dog',
+                                age: 3,
+                                weight: 14.5,
+                                diet: 'Salmon & Sweet Potato Kibble',
+                                mealsCount: 2,
+                                portion: '1.2 cups'
+                            },
+                            {
+                                id: 'pet_2',
+                                name: 'Oliver',
+                                species: 'Cat',
+                                age: 5,
+                                weight: 4.8,
+                                diet: 'Indoor Adult Chicken Paté',
+                                mealsCount: 3,
+                                portion: '1/3 cup + half pouch'
+                            }
+                        ],
+                        pantry: [
+                            {
+                                id: 'pant_1',
+                                name: 'Salmon & Sweet Potato Kibble',
+                                category: 'Dry Food',
+                                quantity: 6.5,
+                                unit: 'kg',
+                                threshold: 2.0
+                            },
+                            {
+                                id: 'pant_2',
+                                name: 'Indoor Adult Chicken Paté Cans',
+                                category: 'Wet Food',
+                                quantity: 12,
+                                unit: 'cans',
+                                threshold: 4.0
+                            },
+                            {
+                                id: 'pant_3',
+                                name: 'Joint Health Chews',
+                                category: 'Supplements',
+                                quantity: 1.5,
+                                unit: 'units',
+                                threshold: 1.0
+                            }
+                        ],
+                        schedules: {},
+                        history: []
+                    }
+                }
+            ]
+        };
+
+        let state = { pets: [], pantry: [], schedules: {}, history: [] };
+
+        const AUTH_STORAGE_KEY = 'paws_plates_auth_v1';
+
+        function loadAuthData() {
+            const saved = localStorage.getItem(AUTH_STORAGE_KEY);
+            if (saved) {
+                try {
+                    authState = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Error loading auth data", e);
+                }
+            }
+            
+            if (authState.currentUserEmail) {
+                const acc = authState.accounts.find(a => a.email === authState.currentUserEmail);
+                if (acc) {
+                    state = acc.data;
+                    closeAuthModal();
+                    initAppUI();
+                    return;
+                }
+            }
+            
+            showAuthChooser();
+        }
+
+        function saveData() {
+            if (authState.currentUserEmail) {
+                const acc = authState.accounts.find(a => a.email === authState.currentUserEmail);
+                if (acc) {
+                    acc.data = state;
+                }
+            }
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authState));
+        }
+
+        function initAppUI() {
+            const acc = authState.accounts.find(a => a.email === authState.currentUserEmail);
+            if (acc) {
+                document.getElementById('header-user-avatar').innerText = acc.name.charAt(0).toUpperCase();
+                document.getElementById('dropdown-user-name').innerText = acc.name;
+                document.getElementById('dropdown-user-email').innerText = acc.email;
+            }
+
+            const todayStr = getTodayDateString();
+            if (!state.schedules[todayStr]) {
+                generateScheduleForDate(todayStr);
+            }
+            renderDashboard();
+        }
+
+        function getTodayDateString() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // --- Toast Notifications ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium transition-all transform translate-y-2 opacity-0 ${
+                type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-900 border-slate-800 text-white'
+            }`;
+            
+            const icon = type === 'success' ? '<i class="fa-solid fa-check-circle text-emerald-600 text-lg"></i>' : '<i class="fa-solid fa-info-circle text-brand-500 text-lg"></i>';
+            toast.innerHTML = `${icon}<span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // --- Navigation ---
+        function switchTab(tabId) {
+            ['dashboard', 'schedule', 'pets', 'pantry', 'analytics', 'history'].forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                if (tabEl) tabEl.classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100";
+                }
+            });
+
+            const activeTabEl = document.getElementById(`tab-${tabId}`);
+            if (activeTabEl) activeTabEl.classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.className = "px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-brand-50 text-brand-700";
+            }
+
+            if (tabId === 'dashboard') renderDashboard();
+            if (tabId === 'schedule') renderSchedule();
+            if (tabId === 'pets') renderPets();
+            if (tabId === 'pantry') renderPantry();
+            if (tabId === 'analytics') renderAnalytics();
+            if (tabId === 'history') renderHistory();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // --- Schedule Generation ---
+        function generateScheduleForDate(dateStr) {
+            const pets = state.pets || [];
+            let items = [];
+
+            pets.forEach(pet => {
+                const count = parseInt(pet.mealsCount) || 2;
+                let defaultTimes = [];
+                if (count === 1) defaultTimes = ['08:00'];
+                else if (count === 2) defaultTimes = ['08:00', '18:00'];
+                else if (count === 3) defaultTimes = ['07:30', '13:00', '18:30'];
+                else if (count === 4) defaultTimes = ['07:00', '11:30', '16:00', '20:00'];
+
+                defaultTimes.forEach((time, index) => {
+                    let mealName = 'Breakfast';
+                    if (count === 2 && index === 1) mealName = 'Dinner';
+                    else if (count === 3) {
+                        if (index === 0) mealName = 'Breakfast';
+                        else if (index === 1) mealName = 'Lunch';
+                        else mealName = 'Dinner';
+                    } else if (count === 4) {
+                        if (index === 0) mealName = 'Early Breakfast';
+                        else if (index === 1) mealName = 'Lunch';
+                        else if (index === 2) mealName = 'Evening Snack';
+                        else mealName = 'Dinner';
+                    }
+
+                    items.push({
+                        id: `sch_${pet.id}_${dateStr}_${index}`,
+                        petId: pet.id,
+                        petName: pet.name,
+                        mealName: mealName,
+                        scheduledTime: time,
+                        date: dateStr,
+                        portion: pet.portion,
+                        diet: pet.diet,
+                        status: 'pending',
+                        completedAt: null,
+                        notes: ''
+                    });
+                });
+            });
+
+            items.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+            if (!state.schedules) state.schedules = {};
+            state.schedules[dateStr] = items;
+            saveData();
+        }
+
+        function regenerateSchedules() {
+            const todayStr = getTodayDateString();
+            generateScheduleForDate(todayStr);
+            renderSchedule();
+            renderDashboard();
+            showToast("Today's feeding schedule has been regenerated.");
+        }
+
+        // --- Render Dashboard ---
+        function renderDashboard() {
+            const pets = state.pets || [];
+            const todayStr = getTodayDateString();
+            const dateObj = new Date(todayStr + 'T00:00:00');
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('dashboard-date-str').innerText = dateObj.toLocaleDateString('en-US', options);
+
+            if (!state.schedules) state.schedules = {};
+            if (!state.schedules[todayStr]) {
+                generateScheduleForDate(todayStr);
+            }
+
+            const todaySchedule = state.schedules[todayStr] || [];
+            const completedCount = todaySchedule.filter(s => s.status === 'completed').length;
+            const totalCount = todaySchedule.length;
+
+            document.getElementById('dash-progress-count').innerText = `${completedCount}/${totalCount}`;
+            document.getElementById('stat-pet-count').innerText = pets.length;
+            document.getElementById('stat-completed-count').innerText = completedCount;
+            document.getElementById('stat-upcoming-count').innerText = totalCount - completedCount;
+
+            const upcomingListEl = document.getElementById('dashboard-upcoming-list');
+            const pendingMeals = todaySchedule.filter(s => s.status === 'pending');
+
+            if (pendingMeals.length === 0) {
+                upcomingListEl.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-500 mb-2"></i>
+                        <p class="font-medium text-slate-700">All meals for today are completed!</p>
+                        <p class="text-xs text-slate-500 mt-1">Great job keeping your pets on schedule.</p>
+                    </div>
+                `;
+            } else {
+                upcomingListEl.innerHTML = pendingMeals.map(meal => `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-brand-500/50 transition-all">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 rounded-xl bg-orange-100 text-brand-600 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-bowl-food"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">${meal.petName} <span class="text-xs font-normal text-slate-500 ml-1">• ${meal.mealName}</span></h4>
+                                <p class="text-xs text-slate-500 mt-0.5"><i class="fa-regular fa-clock mr-1"></i> Scheduled: ${formatTime12h(meal.scheduledTime)} &bull; ${meal.portion}</p>
+                            </div>
+                        </div>
+                        <button onclick="quickCompleteMeal('${meal.id}')" class="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-check"></i> Mark Fed
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            const petsStatusEl = document.getElementById('dashboard-pets-status');
+            if (pets.length === 0) {
+                petsStatusEl.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">No pets added yet in this account.</p>`;
+            } else {
+                petsStatusEl.innerHTML = pets.map(pet => {
+                    const petMeals = todaySchedule.filter(s => s.petId === pet.id);
+                    const petCompleted = petMeals.filter(s => s.status === 'completed').length;
+                    const pct = petMeals.length > 0 ? Math.round((petCompleted / petMeals.length) * 100) : 0;
+                    
+                    return `
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-paw text-brand-500 text-xs"></i> ${pet.name}
+                                </span>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${pct === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-brand-700'}">
+                                    ${petCompleted}/${petMeals.length} Fed
+                                </span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                                <div class="bg-brand-500 h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2">${pet.diet}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // --- Render Schedule View ---
+        function renderSchedule() {
+            const todayStr = getTodayDateString();
+            if (!state.schedules) state.schedules = {};
+            if (!state.schedules[todayStr]) {
+                generateScheduleForDate(todayStr);
+            }
+            const schedule = state.schedules[todayStr] || [];
+            const container = document.getElementById('schedule-container');
+
+            if (schedule.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-xl border border-slate-200">
+                        <i class="fa-solid fa-calendar-xmark text-4xl text-slate-300 mb-3"></i>
+                        <p class="text-slate-600 font-medium">No pets or feeding schedule found for this account.</p>
+                        <button onclick="openPetModal()" class="mt-3 bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-medium">Add Pet First</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${schedule.map(meal => {
+                        const isCompleted = meal.status === 'completed';
+                        return `
+                            <div class="bg-white rounded-xl p-5 border ${isCompleted ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'} shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${isCompleted ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-brand-700'}">
+                                            <i class="fa-regular fa-clock mr-1"></i> ${formatTime12h(meal.scheduledTime)}
+                                        </span>
+                                        <span class="text-xs font-medium text-slate-500">${isCompleted ? '<i class="fa-solid fa-check text-emerald-600 mr-1"></i> Completed' : 'Pending'}</span>
+                                    </div>
+                                    <h3 class="font-bold text-lg text-slate-900">${meal.petName} - ${meal.mealName}</h3>
+                                    <p class="text-sm text-slate-600 mt-1"><strong class="font-medium text-slate-700">Portion:</strong> ${meal.portion}</p>
+                                    <p class="text-xs text-slate-500 mt-0.5"><strong class="font-medium text-slate-700">Diet:</strong> ${meal.diet}</p>
+                                    ${meal.notes ? `<div class="mt-3 p-2.5 bg-slate-100 rounded-lg text-xs text-slate-700"><strong class="font-medium">Note:</strong> ${meal.notes}</div>` : ''}
+                                </div>
+                                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                    <span class="text-xs text-slate-400">${isCompleted && meal.completedAt ? 'Fed at: ' + formatDateTime(meal.completedAt) : ''}</span>
+                                    ${isCompleted ? `
+                                        <button onclick="uncompleteMeal('${meal.id}')" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 bg-white">
+                                            Revert
+                                        </button>
+                                    ` : `
+                                        <button onclick="quickCompleteMeal('${meal.id}')" class="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+                                            <i class="fa-solid fa-check"></i> Record Fed
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // --- Render Pets View ---
+        function renderPets() {
+            const pets = state.pets || [];
+            const grid = document.getElementById('pets-grid');
+
+            if (pets.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-white rounded-xl border border-slate-200">
+                        <i class="fa-solid fa-dog text-4xl text-slate-300 mb-3"></i>
+                        <p class="text-slate-600 font-medium">No pets added yet for this account. Click below to add your first pet!</p>
+                        <button onclick="openPetModal()" class="mt-4 bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-medium">Add Pet</button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = pets.map(pet => {
+                let iconClass = 'fa-dog';
+                const sp = (pet.species || '').toLowerCase();
+                if (sp === 'cat') iconClass = 'fa-cat';
+                else if (sp === 'rabbit') iconClass = 'fa-carrot';
+                else if (sp === 'bird') iconClass = 'fa-kiwi-bird';
+                else if (sp === 'hamster' || sp === 'mouse') iconClass = 'fa-shield-dog';
+                else if (sp === 'reptile') iconClass = 'fa-frog';
+                else if (sp === 'fish') iconClass = 'fa-fish';
+
+                return `
+                    <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center text-xl font-bold">
+                                    <i class="fa-solid ${iconClass}"></i>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="editPet('${pet.id}')" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors" title="Edit Pet">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button onclick="deletePet('${pet.id}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Pet">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-xl text-slate-900">${pet.name}</h3>
+                            <p class="text-xs text-slate-500 font-medium mt-0.5">${pet.species} &bull; ${pet.age} yrs &bull; ${pet.weight} kg</p>
+                            
+                            <div class="mt-4 space-y-2 pt-4 border-t border-slate-100 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Daily Meals:</span>
+                                    <span class="font-semibold text-slate-800">${pet.mealsCount} meals/day</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Portion Size:</span>
+                                    <span class="font-semibold text-slate-800">${pet.portion}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-xs uppercase tracking-wider mb-1">Dietary Plan:</span>
+                                    <span class="font-medium text-slate-800 bg-slate-50 px-3 py-1.5 rounded-lg block border border-slate-200 text-xs">${pet.diet}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Render Pantry View ---
+        function renderPantry() {
+            const pantry = state.pantry || [];
+            const grid = document.getElementById('pantry-grid');
+
+            if (pantry.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-white rounded-xl border border-slate-200">
+                        <i class="fa-solid fa-boxes-stacked text-4xl text-slate-300 mb-3"></i>
+                        <p class="text-slate-600 font-medium">No pantry supplies added yet.</p>
+                        <button onclick="openPantryModal()" class="mt-4 bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-medium">Add Supply Item</button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = pantry.map(item => {
+                const isLow = item.quantity <= item.threshold;
+                return `
+                    <div class="bg-white rounded-xl p-6 border ${isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'} shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${isLow ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                                    ${isLow ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Low Stock' : '<i class="fa-solid fa-check mr-1"></i> In Stock'}
+                                </span>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="editPantryItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button onclick="deletePantryItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-900">${item.name}</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">${item.category}</p>
+                            
+                            <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Remaining</p>
+                                    <p class="text-2xl font-bold text-slate-900 mt-0.5">${item.quantity} <span class="text-sm font-normal text-slate-500">${item.unit}</span></p>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="adjustPantryQuantity('${item.id}', -0.5)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center">-</button>
+                                    <button onclick="adjustPantryQuantity('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Pantry Modals & Actions ---
+        function openPantryModal(itemId = null) {
+            document.getElementById('pantry-modal').classList.remove('hidden');
+            document.getElementById('pantry-form').reset();
+            if (itemId) {
+                document.getElementById('pantry-modal-title').innerText = 'Edit Supply Item';
+                const item = (state.pantry || []).find(i => i.id === itemId);
+                if (item) {
+                    document.getElementById('pantry-id').value = item.id;
+                    document.getElementById('pantry-name').value = item.name;
+                    document.getElementById('pantry-category').value = item.category;
+                    document.getElementById('pantry-quantity').value = item.quantity;
+                    document.getElementById('pantry-unit').value = item.unit;
+                    document.getElementById('pantry-threshold').value = item.threshold;
+                }
+            } else {
+                document.getElementById('pantry-modal-title').innerText = 'Add Supply Item';
+                document.getElementById('pantry-id').value = '';
+            }
+        }
+
+        function closePantryModal() {
+            document.getElementById('pantry-modal').classList.add('hidden');
+        }
+
+        function handlePantrySubmit(event) {
+            event.preventDefault();
+            if (!state.pantry) state.pantry = [];
+
+            const id = document.getElementById('pantry-id').value;
+            const itemData = {
+                id: id || 'pant_' + Date.now(),
+                name: document.getElementById('pantry-name').value,
+                category: document.getElementById('pantry-category').value,
+                quantity: parseFloat(document.getElementById('pantry-quantity').value),
+                unit: document.getElementById('pantry-unit').value,
+                threshold: parseFloat(document.getElementById('pantry-threshold').value)
+            };
+
+            if (id) {
+                const index = state.pantry.findIndex(i => i.id === id);
+                if (index !== -1) state.pantry[index] = itemData;
+                showToast("Updated pantry item!");
+            } else {
+                state.pantry.push(itemData);
+                showToast("Added item to pantry!");
+            }
+
+            saveData();
+            closePantryModal();
+            renderPantry();
+        }
+
+        function editPantryItem(itemId) {
+            openPantryModal(itemId);
+        }
+
+        function deletePantryItem(itemId) {
+            showConfirmModal("Delete Item?", "Are you sure you want to remove this supply item from the pantry?", () => {
+                state.pantry = (state.pantry || []).filter(i => i.id !== itemId);
+                saveData();
+                renderPantry();
+                showToast("Pantry item removed.");
+            });
+        }
+
+        function adjustPantryQuantity(itemId, delta) {
+            if (!state.pantry) return;
+            const item = state.pantry.find(i => i.id === itemId);
+            if (!item) return;
+
+            item.quantity = Math.max(0, parseFloat((item.quantity + delta).toFixed(2)));
+            saveData();
+            renderPantry();
+        }
+
+        // --- Render Analytics View ---
+        function renderAnalytics() {
+            const pets = state.pets || [];
+            const history = state.history || [];
+            const schedules = state.schedules || {};
+
+            const filterSelect = document.getElementById('analytics-pet-select');
+            const currentFilter = filterSelect.value;
+            filterSelect.innerHTML = `<option value="all">All Pets Combined</option>` + pets.map(p => `<option value="${p.id}" ${p.id === currentFilter ? 'selected' : ''}>${p.name}</option>`).join('');
+
+            const selectedPetId = filterSelect.value;
+
+            let totalScheduledAll = 0;
+            let totalCompletedAll = 0;
+
+            Object.keys(schedules).forEach(dateStr => {
+                const daySch = schedules[dateStr];
+                daySch.forEach(s => {
+                    if (selectedPetId === 'all' || s.petId === selectedPetId) {
+                        totalScheduledAll++;
+                        if (s.status === 'completed') totalCompletedAll++;
+                    }
+                });
+            });
+
+            const filteredHistory = selectedPetId === 'all' ? history : history.filter(h => h.petId === selectedPetId);
+            const totalLogged = filteredHistory.length;
+
+            const adherenceRate = totalScheduledAll > 0 ? Math.round((totalCompletedAll / totalScheduledAll) * 100) : (totalLogged > 0 ? 100 : 0);
+
+            let streak = 0;
+            const today = new Date();
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+
+                const daySch = schedules[dateStr] || [];
+                const petDaySch = selectedPetId === 'all' ? daySch : daySch.filter(s => s.petId === selectedPetId);
+
+                if (petDaySch.length > 0) {
+                    const allDone = petDaySch.every(s => s.status === 'completed');
+                    if (allDone) streak++;
+                    else break;
+                } else if (i === 0 && totalLogged > 0) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+
+            let totalCalories = 0;
+            const targetPets = selectedPetId === 'all' ? pets : pets.filter(p => p.id === selectedPetId);
+            
+            targetPets.forEach(p => {
+                const wt = p.weight || 5;
+                const baseRER = 70 * Math.pow(wt, 0.75);
+                let multiplier = 1.6;
+                const sp = (p.species || '').toLowerCase();
+                if (sp === 'cat') multiplier = 1.2;
+                else if (sp === 'rabbit') multiplier = 1.4;
+                else if (sp === 'bird') multiplier = 2.0;
+                totalCalories += Math.round(baseRER * multiplier);
+            });
+
+            document.getElementById('analytics-adherence').innerText = `${adherenceRate}%`;
+            document.getElementById('analytics-streak').innerText = `${streak} Days`;
+            document.getElementById('analytics-total-meals').innerText = totalLogged;
+            document.getElementById('analytics-calories').innerText = `${totalCalories} kcal`;
+
+            const breakdownEl = document.getElementById('analytics-pets-breakdown');
+            if (targetPets.length === 0) {
+                breakdownEl.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">No pets found.</p>`;
+            } else {
+                breakdownEl.innerHTML = targetPets.map(p => {
+                    const wt = p.weight || 5;
+                    const cals = Math.round((70 * Math.pow(wt, 0.75)) * ((p.species || '').toLowerCase() === 'cat' ? 1.2 : 1.6));
+                    const petHistoryCount = history.filter(h => h.petId === p.id).length;
+
+                    return `
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-50 rounded-xl border border-slate-200 gap-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 font-bold flex items-center justify-center">
+                                    <i class="fa-solid fa-paw"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900">${p.name} <span class="text-xs font-normal text-slate-500">(${p.species} &bull; ${p.weight} kg)</span></h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">Diet: ${p.diet} &bull; Portion: ${p.portion}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                                <div class="text-right">
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block">Est. Daily Energy</span>
+                                    <span class="font-bold text-slate-900 text-sm">${cals} kcal / day</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold block">Meals Logged</span>
+                                    <span class="font-bold text-brand-600 text-sm">${petHistoryCount} meals</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // --- Render History View ---
+        function renderHistory() {
+            const pets = state.pets || [];
+            const tbody = document.getElementById('history-table-body');
+            const filterPetId = document.getElementById('history-filter-pet').value;
+
+            const filterSelect = document.getElementById('history-filter-pet');
+            const currentFilterVal = filterSelect.value;
+            filterSelect.innerHTML = `<option value="all">All Pets</option>` + pets.map(p => `<option value="${p.id}" ${p.id === currentFilterVal ? 'selected' : ''}>${p.name}</option>`).join('');
+
+            let logs = [...(state.history || [])];
+            if (filterPetId !== 'all') {
+                logs = logs.filter(l => l.petId === filterPetId);
+            }
+
+            logs.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+            if (logs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-12 text-slate-400">
+                            <i class="fa-solid fa-book-open text-3xl mb-2 text-slate-300"></i>
+                            <p class="font-medium text-slate-600">No feeding history logs found for this account.</p>
+                            <p class="text-xs text-slate-400 mt-1">Completed meals will appear here automatically.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-3 px-4 font-bold text-slate-900">${log.petName}</td>
+                    <td class="py-3 px-4 text-slate-700">${log.mealName}</td>
+                    <td class="py-3 px-4 text-slate-500">${formatTime12h(log.scheduledTime || '08:00')} (${log.date})</td>
+                    <td class="py-3 px-4 text-slate-800 font-medium">${formatDateTime(log.completedAt)}</td>
+                    <td class="py-3 px-4">
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-full">Completed</span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-600 text-xs max-w-xs truncate">${log.notes || '—'}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteHistoryLog('${log.id}')" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg transition-colors" title="Delete Log">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- Pet Modal Actions ---
+        function openPetModal(petId = null) {
+            document.getElementById('pet-modal').classList.remove('hidden');
+            document.getElementById('pet-form').reset();
+            if (petId) {
+                document.getElementById('pet-modal-title').innerText = 'Edit Pet Profile';
+                const pet = (state.pets || []).find(p => p.id === petId);
+                if (pet) {
+                    document.getElementById('pet-id').value = pet.id;
+                    document.getElementById('pet-name').value = pet.name;
+                    document.getElementById('pet-species').value = pet.species;
+                    document.getElementById('pet-age').value = pet.age;
+                    document.getElementById('pet-weight').value = pet.weight;
+                    document.getElementById('pet-diet').value = pet.diet;
+                    document.getElementById('pet-meals-count').value = pet.mealsCount;
+                    document.getElementById('pet-portion').value = pet.portion;
+                }
+            } else {
+                document.getElementById('pet-modal-title').innerText = 'Add New Pet';
+                document.getElementById('pet-id').value = '';
+            }
+        }
+
+        function closePetModal() {
+            document.getElementById('pet-modal').classList.add('hidden');
+        }
+
+        function handlePetSubmit(event) {
+            event.preventDefault();
+            if (!state.pets) state.pets = [];
+
+            const id = document.getElementById('pet-id').value;
+            const petData = {
+                id: id || 'pet_' + Date.now(),
+                name: document.getElementById('pet-name').value,
+                species: document.getElementById('pet-species').value,
+                age: parseFloat(document.getElementById('pet-age').value),
+                weight: parseFloat(document.getElementById('pet-weight').value),
+                diet: document.getElementById('pet-diet').value,
+                mealsCount: parseInt(document.getElementById('pet-meals-count').value),
+                portion: document.getElementById('pet-portion').value
+            };
+
+            if (id) {
+                const index = state.pets.findIndex(p => p.id === id);
+                if (index !== -1) state.pets[index] = petData;
+                showToast(`Updated profile for ${petData.name}!`);
+            } else {
+                state.pets.push(petData);
+                showToast(`Successfully added ${petData.name}!`);
+            }
+
+            saveData();
+            regenerateSchedules();
+            closePetModal();
+            renderPets();
+        }
+
+        function editPet(petId) {
+            openPetModal(petId);
+        }
+
+        function deletePet(petId) {
+            const pet = (state.pets || []).find(p => p.id === petId);
+            const petName = pet ? pet.name : 'this pet';
+            
+            showConfirmModal(
+                `Delete ${petName}?`,
+                `Are you sure you want to delete ${petName}? This will also remove their schedule.`,
+                () => {
+                    state.pets = (state.pets || []).filter(p => p.id !== petId);
+                    saveData();
+                    regenerateSchedules();
+                    renderPets();
+                    showToast("Pet profile deleted.");
+                }
+            );
+        }
+
+        function deleteHistoryLog(logId) {
+            showConfirmModal(
+                "Delete History Log?",
+                "Are you sure you want to delete this completed feeding log?",
+                () => {
+                    if (state.history) {
+                        state.history = state.history.filter(h => h.id !== logId);
+                    }
+                    saveData();
+                    renderHistory();
+                    showToast("History log removed.");
+                }
+            );
+        }
+
+        let confirmCallback = null;
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            
+            const btn = document.getElementById('confirm-action-btn');
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', () => {
+                closeConfirmModal();
+                if (onConfirm) onConfirm();
+            });
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        // --- Meal Modal & Logging Actions ---
+        function openMealModal(scheduleId = null) {
+            document.getElementById('meal-modal').classList.remove('hidden');
+            document.getElementById('meal-form').reset();
+            
+            const petSelect = document.getElementById('meal-pet-select');
+            petSelect.innerHTML = (state.pets || []).map(p => `<option value="${p.id}">${p.name} (${p.species})</option>`).join('');
+            
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('meal-timestamp').value = now.toISOString().slice(0, 16);
+
+            if (scheduleId) {
+                document.getElementById('meal-schedule-id').value = scheduleId;
+                const todayStr = getTodayDateString();
+                const schedule = (state.schedules && state.schedules[todayStr]) ? state.schedules[todayStr] : [];
+                const item = schedule.find(s => s.id === scheduleId);
+                if (item) {
+                    petSelect.value = item.petId;
+                    document.getElementById('meal-name-select').value = item.mealName;
+                    if (item.notes) {
+                        document.getElementById('meal-notes').value = item.notes;
+                    }
+                }
+            } else {
+                document.getElementById('meal-schedule-id').value = '';
+            }
+        }
+
+        function updatePetMealsDropdown() {}
+
+        function closeMealModal() {
+            document.getElementById('meal-modal').classList.add('hidden');
+        }
+
+        function quickCompleteMeal(scheduleId) {
+            const todayStr = getTodayDateString();
+            if (!state.schedules || !state.schedules[todayStr]) return;
+
+            const schedule = state.schedules[todayStr];
+            const item = schedule.find(s => s.id === scheduleId);
+            if (!item) return;
+
+            item.status = 'completed';
+            item.completedAt = new Date().toISOString();
+
+            if (!state.history) state.history = [];
+            state.history.push({
+                id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                petId: item.petId,
+                petName: item.petName,
+                mealName: item.mealName,
+                scheduledTime: item.scheduledTime,
+                date: todayStr,
+                completedAt: item.completedAt,
+                notes: item.notes || 'Recorded as fed.'
+            });
+
+            saveData();
+            renderDashboard();
+            renderSchedule();
+            showToast(`Marked ${item.mealName} for ${item.petName} as fed!`);
+        }
+
+        function uncompleteMeal(scheduleId) {
+            const todayStr = getTodayDateString();
+            if (!state.schedules || !state.schedules[todayStr]) return;
+
+            const schedule = state.schedules[todayStr];
+            const item = schedule.find(s => s.id === scheduleId);
+            if (!item) return;
+
+            item.status = 'pending';
+            item.completedAt = null;
+
+            if (state.history) {
+                state.history = state.history.filter(h => !(h.petId === item.petId && h.mealName === item.mealName && h.date === todayStr));
+            }
+
+            saveData();
+            renderDashboard();
+            renderSchedule();
+            showToast(`Reverted status for ${item.mealName}.`);
+        }
+
+        function handleMealSubmit(event) {
+            event.preventDefault();
+            const petId = document.getElementById('meal-pet-select').value;
+            const pet = (state.pets || []).find(p => p.id === petId);
+            if (!pet) return;
+
+            const mealName = document.getElementById('meal-name-select').value;
+            const timestamp = document.getElementById('meal-timestamp').value;
+            const notes = document.getElementById('meal-notes').value;
+
+            if (!state.history) state.history = [];
+            state.history.push({
+                id: 'log_' + Date.now(),
+                petId: pet.id,
+                petName: pet.name,
+                mealName: mealName,
+                scheduledTime: timestamp ? new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false}) : '12:00',
+                date: getTodayDateString(),
+                completedAt: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
+                notes: notes
+            });
+
+            const todayStr = getTodayDateString();
+            if (state.schedules && state.schedules[todayStr]) {
+                const sch = state.schedules[todayStr].find(s => s.petId === pet.id && s.mealName === mealName && s.status === 'pending');
+                if (sch) {
+                    sch.status = 'completed';
+                    sch.completedAt = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
+                    sch.notes = notes;
+                }
+            }
+
+            saveData();
+            closeMealModal();
+            renderDashboard();
+            renderSchedule();
+            renderHistory();
+            showToast(`Successfully recorded meal for ${pet.name}!`);
+        }
+
+        window.onload = function() {
+            loadAuthData();
+        };
+    </script>
+</body>
+</html>
